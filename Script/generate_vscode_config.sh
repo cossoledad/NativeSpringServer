@@ -44,7 +44,6 @@ GDB_BIN="${GDB_BIN:-$(command -v gdb || true)}"
 BACKEND_ARTIFACT_ID="$(xml_text artifactId "${BACKEND_POM}")"
 BACKEND_VERSION="$(xml_text version "${BACKEND_POM}")"
 BACKEND_MAIN_CLASS="com.example.backend.BackendSmokeApplication"
-BACKEND_PROJECT_NAME="${BACKEND_ARTIFACT_ID}"
 BACKEND_JAR_REL="App/backend/target/${BACKEND_ARTIFACT_ID}-${BACKEND_VERSION}.jar"
 FOUNDATION_LIB_DIR_REL="App/foundation/build/native/lib"
 FOUNDATION_EXE_REL="App/foundation/build/foundation_smoke"
@@ -190,6 +189,20 @@ cat > "${VSCODE_DIR}/tasks.json" <<'EOF'
       "problemMatcher": []
     },
     {
+      "label": "Backend: debug classpath",
+      "type": "shell",
+      "command": "mvn -q -f App/backend/pom.xml dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory=target/dependency",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "dependsOn": "Backend: build",
+      "problemMatcher": []
+    },
+    {
       "label": "Foundation: build",
       "type": "shell",
       "command": "INVOKE_FORCE_PTY=1 invoke --search-root App/foundation build",
@@ -203,15 +216,15 @@ cat > "${VSCODE_DIR}/tasks.json" <<'EOF'
       "problemMatcher": []
     },
     {
-      "label": "App: run service",
+      "label": "App: debug classpath",
       "type": "shell",
-      "command": "java -Dfoundation.math.lib.dir=${workspaceFolder}/App/foundation/build/native/lib -jar ${workspaceFolder}/App/backend/target/backend-smoke-0.1.2-SNAPSHOT.jar",
+      "command": "mvn -q -f App/backend/pom.xml dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory=target/dependency",
       "options": {
         "cwd": "${workspaceFolder}"
       },
       "presentation": {
         "reveal": "always",
-        "panel": "dedicated"
+        "panel": "shared"
       },
       "dependsOn": "App: build",
       "problemMatcher": []
@@ -239,11 +252,14 @@ cat > "${VSCODE_DIR}/launch.json" <<EOF
       "type": "java",
       "request": "launch",
       "mainClass": "${BACKEND_MAIN_CLASS}",
-      "projectName": "${BACKEND_PROJECT_NAME}",
       "cwd": "\${workspaceFolder}/App/backend",
       "console": "integratedTerminal",
       "vmArgs": "-Dfoundation.math.lib.dir=\${workspaceFolder}/${FOUNDATION_LIB_DIR_REL}",
-      "preLaunchTask": "App: build"
+      "classPaths": [
+        "\${workspaceFolder}/App/backend/target/classes",
+        "\${workspaceFolder}/App/backend/target/dependency/*"
+      ],
+      "preLaunchTask": "App: debug classpath"
     },
     {
       "name": "App Service (Debug Foundation JNI C++)",
@@ -280,11 +296,14 @@ cat > "${VSCODE_DIR}/launch.json" <<EOF
       "type": "java",
       "request": "launch",
       "mainClass": "${BACKEND_MAIN_CLASS}",
-      "projectName": "${BACKEND_PROJECT_NAME}",
       "cwd": "\${workspaceFolder}/App/backend",
       "console": "integratedTerminal",
       "vmArgs": "-Dfoundation.math.lib.dir=\${workspaceFolder}/${FOUNDATION_LIB_DIR_REL}",
-      "preLaunchTask": "Backend: build"
+      "classPaths": [
+        "\${workspaceFolder}/App/backend/target/classes",
+        "\${workspaceFolder}/App/backend/target/dependency/*"
+      ],
+      "preLaunchTask": "Backend: debug classpath"
     },
     {
       "name": "Foundation Smoke (Debug C++)",
