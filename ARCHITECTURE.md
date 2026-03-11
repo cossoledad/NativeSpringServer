@@ -67,6 +67,8 @@
 
 ## 4. invoke 基础命令
 - `Tools/invoke_support.py` 提供统一的任务头、成功/失败提示、颜色输出和子任务调用封装。
+  - 默认会在有真实终端时自动启用 PTY，保证 Maven/Conan/CMake 日志实时输出。
+  - 可通过 `INVOKE_FORCE_PTY=1` 强制开启，或 `INVOKE_DISABLE_PTY=1` 强制关闭。
 - `App/`、`App/backend/`、`App/foundation/` 都提供统一的 `deps` / `clean` / `build` / `rebuild`。
 - 在 `App/` 目录执行 `invoke build`，即可串联 foundation 与 backend，无需再逐层 `cd`。
 - 以下命令都在 `Library/` 目录执行。

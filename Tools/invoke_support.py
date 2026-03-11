@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import os
 import shlex
 import shutil
+import sys
 import time
 from contextlib import contextmanager
 from pathlib import Path
@@ -40,6 +42,16 @@ def failure(message: str) -> None:
     print(_paint(f"ERR {message}", RED, BOLD))
 
 
+def _resolve_pty(pty: bool | None) -> bool:
+    if pty is not None:
+        return pty
+    if os.environ.get("INVOKE_FORCE_PTY") == "1":
+        return True
+    if os.environ.get("INVOKE_DISABLE_PTY") == "1":
+        return False
+    return sys.stdout.isatty()
+
+
 @contextmanager
 def task_scope(title: str):
     started = time.monotonic()
@@ -56,10 +68,14 @@ def task_scope(title: str):
         success(f"{title} finished in {elapsed:.1f}s")
 
 
-def run(c, command: str, *, cwd: Path | None = None, title: str | None = None, pty: bool = True):
+def run(c, command: str, *, cwd: Path | None = None, title: str | None = None, pty: bool | None = None):
     if title:
         step(title)
-    return c.run(command, cwd=str(cwd) if cwd else None, pty=pty)
+    use_pty = _resolve_pty(pty)
+    if cwd:
+        with c.cd(str(cwd)):
+            return c.run(command, pty=use_pty)
+    return c.run(command, pty=use_pty)
 
 
 def remove_paths(*paths: Path) -> None:
@@ -70,7 +86,15 @@ def remove_paths(*paths: Path) -> None:
             shutil.rmtree(path)
 
 
-def invoke_task(c, *, search_root: Path, task_name: str, args: list[str] | None = None, cwd: Path | None = None):
+def invoke_task(
+    c,
+    *,
+    search_root: Path,
+    task_name: str,
+    args: list[str] | None = None,
+    cwd: Path | None = None,
+    pty: bool | None = None,
+):
     command = [
         "invoke",
         "--search-root",
@@ -83,4 +107,5 @@ def invoke_task(c, *, search_root: Path, task_name: str, args: list[str] | None 
         " ".join(shlex.quote(part) for part in command),
         cwd=cwd,
         title=f"{search_root.name}: invoke {task_name}",
+        pty=pty,
     )

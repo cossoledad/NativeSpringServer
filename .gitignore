@@ -1,0 +1,55 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Local env
+.env
+.env.*
+
+# Logs
+*.log
+
+# Java / Maven
+*.class
+*.jar
+*.war
+*.ear
+target/
+
+# CMake / native
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+CMakeUserPresets.json
+
+# Conan generated files
+conan_toolchain.cmake
+conanbuild*.sh
+conanrun*.sh
+deactivate_conanbuild*.sh
+deactivate_conanrun*.sh
+CMakePresets.json
+build/*/generators/
+
+# Project outputs
+dist/
+Library/target/
+Library/dist/
+Library/native/build/
+App/backend/target/
+App/foundation/build/
+App/foundation/target/
