@@ -44,6 +44,8 @@
 │   │   └── main/resources/META-INF
 │   ├── pom.xml                              # Java 打包与 generated-sources 接入
 │   └── tasks.py                             # invoke 构建脚本
+├── Script
+│   └── generate_vscode_config.sh            # 生成本机专用 VS Code 配置
 ├── Tools
 │   └── invoke_support.py                    # invoke 公共输出、颜色、子任务调用工具
 └── ARCHITECTURE.md
