@@ -1,0 +1,6 @@
+[requires]
+cloudlogger-native/0.1.1
+
+[generators]
+CMakeDeps
+CMakeToolchain
