@@ -9,7 +9,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from Tools.invoke_support import invoke_task, task_scope
+from Tools.invoke_support import invoke_task, task_scope, warn
 
 
 ROOT = Path(__file__).resolve().parent
@@ -31,6 +31,16 @@ def clean(c):
     with task_scope("App clean"):
         invoke_task(c, search_root=BACKEND_DIR, task_name="clean", cwd=ROOT)
         invoke_task(c, search_root=FOUNDATION_DIR, task_name="clean", cwd=ROOT)
+        leftovers = [
+            BACKEND_DIR / "target",
+            FOUNDATION_DIR / "build",
+            FOUNDATION_DIR / "target",
+        ]
+        still_exists = [path for path in leftovers if path.exists()]
+        if still_exists:
+            warn("Clean finished but some output paths still exist:")
+            for path in still_exists:
+                warn(f"  - {path}")
 
 
 @task

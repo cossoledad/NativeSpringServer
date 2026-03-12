@@ -71,7 +71,13 @@ def deps(
 def clean(c):
     """Remove generated foundation outputs."""
     with task_scope("App foundation clean"):
-        remove_paths(BUILD_DIR, TARGET_DIR)
+        removed, _ = remove_paths(BUILD_DIR, TARGET_DIR)
+        if removed:
+            print("Removed:")
+            for path in removed:
+                print(f"  - {path}")
+        else:
+            print(f"Nothing to clean: {BUILD_DIR}, {TARGET_DIR}")
 
 
 @task

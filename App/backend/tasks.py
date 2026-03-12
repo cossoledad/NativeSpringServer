@@ -40,7 +40,11 @@ def deps(c, mvn_cmd="mvn", settings_file=PROJECT_MAVEN_SETTINGS):
 def clean(c):
     """Remove generated backend outputs."""
     with task_scope("App backend clean"):
-        remove_paths(TARGET_DIR)
+        removed, _ = remove_paths(TARGET_DIR)
+        if removed:
+            print(f"Removed: {removed[0]}")
+        else:
+            print(f"Nothing to clean: {TARGET_DIR}")
 
 
 @task

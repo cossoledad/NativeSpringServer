@@ -2,25 +2,25 @@ package com.example.backend;
 
 import java.nio.file.Path;
 
-public final class FoundationMathNativeLoader {
+public final class FoundationDocsNativeLoader {
 
     private static volatile boolean loaded = false;
 
-    private FoundationMathNativeLoader() {}
+    private FoundationDocsNativeLoader() {}
 
     public static void load() {
         if (loaded) {
             return;
         }
-        synchronized (FoundationMathNativeLoader.class) {
+        synchronized (FoundationDocsNativeLoader.class) {
             if (loaded) {
                 return;
             }
             String libDir = System.getProperty(
-                "foundation.math.lib.dir",
+                "foundation.docs.lib.dir",
                 Path.of("..", "foundation", "build", "native", "lib").toAbsolutePath().normalize().toString()
             );
-            String libPath = Path.of(libDir, "libfoundation_math_jni.so").toAbsolutePath().normalize().toString();
+            String libPath = Path.of(libDir, "libfoundation_docs_jni.so").toAbsolutePath().normalize().toString();
             System.load(libPath);
             loaded = true;
         }

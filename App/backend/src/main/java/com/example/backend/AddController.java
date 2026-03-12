@@ -1,6 +1,6 @@
 package com.example.backend;
 
-import com.example.foundation.math.MathApi;
+import com.ty.nss.foundation.docs.MarkdownDocumentApi;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,8 +14,8 @@ public class AddController {
 
     @GetMapping("/add")
     public Map<String, Integer> add(@RequestParam("a") int a, @RequestParam("b") int b) {
-        FoundationMathNativeLoader.load();
-        int result = MathApi.add(a, b);
+        FoundationDocsNativeLoader.load();
+        int result = MarkdownDocumentApi.add(a, b);
         return Map.of("a", a, "b", b, "result", result);
     }
 
@@ -24,8 +24,8 @@ public class AddController {
         @RequestParam("url") String url,
         @RequestParam(name = "params", defaultValue = "") String params
     ) {
-        FoundationMathNativeLoader.load();
-        String response = MathApi.bridgeGet(url, params);
+        FoundationDocsNativeLoader.load();
+        String response = MarkdownDocumentApi.bridgeGet(url, params);
         Map<String, String> result = new LinkedHashMap<>();
         result.put("url", url);
         result.put("params", params);
@@ -38,9 +38,9 @@ public class AddController {
         @RequestParam("url") String url,
         @RequestBody(required = false) String body
     ) {
-        FoundationMathNativeLoader.load();
+        FoundationDocsNativeLoader.load();
         String payload = body == null ? "" : body;
-        String response = MathApi.bridgePost(url, payload);
+        String response = MarkdownDocumentApi.bridgePost(url, payload);
         Map<String, String> result = new LinkedHashMap<>();
         result.put("url", url);
         result.put("body", payload);

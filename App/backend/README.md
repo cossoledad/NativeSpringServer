@@ -3,7 +3,7 @@
 This app validates consuming the Java package from the remote Maven repository.
 
 The app exposes:
-- `GET /add?a=<int>&b=<int>`: calls foundation SWIG math API `MathApi.add(a, b)`.
+- `GET /add?a=<int>&b=<int>`: calls foundation SWIG docs API `MarkdownDocumentApi.add(a, b)`.
 - `GET /foundation/network/get?url=...&params=...`: backend -> foundation -> conan bridge network GET.
 - `POST /foundation/network/post?url=...`: backend -> foundation -> conan bridge network POST.
 - `GET /foundation/echo-get?msg=...` and `POST /foundation/echo-post`: local echo endpoints for network bridge self-test.
@@ -12,7 +12,7 @@ The app exposes:
 
 - `com.ty:native-spring-server-bridge:0.1.2` and companion modules are already published to `maven-releases`.
 - Maven credentials for `maven-releases` are configured in `~/.m2/settings.xml`.
-- foundation SWIG math JNI library is built first (`cd Library && invoke app-foundation` or `cd Library && invoke app-backend`).
+- foundation SWIG docs JNI library is built first (`cd Library && invoke app-foundation` or `cd Library && invoke app-backend`).
 
 ## Run
 

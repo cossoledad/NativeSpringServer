@@ -78,12 +78,19 @@ def run(c, command: str, *, cwd: Path | None = None, title: str | None = None, p
     return c.run(command, pty=use_pty)
 
 
-def remove_paths(*paths: Path) -> None:
+def remove_paths(*paths: Path) -> tuple[list[Path], list[Path]]:
+    removed: list[Path] = []
+    missing: list[Path] = []
     for path in paths:
         if path.is_file() or path.is_symlink():
             path.unlink()
+            removed.append(path)
         elif path.exists():
             shutil.rmtree(path)
+            removed.append(path)
+        else:
+            missing.append(path)
+    return removed, missing
 
 
 def invoke_task(
