@@ -3,7 +3,7 @@
 
   <groupId>com.ty</groupId>
   <artifactId>native-spring-server-bridge-parent</artifactId>
-  <version>0.9.1</version>
+  <version>0.9.3</version>
   <packaging>pom</packaging>
 
   <properties>
