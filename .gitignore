@@ -3,6 +3,7 @@
 Thumbs.db
 .idea/
 .vscode/
+.envrc
 
 # Python
 __pycache__/
@@ -15,6 +16,7 @@ venv/
 # Local env
 .env
 .env.*
+project-config.json
 
 # Logs
 *.log
