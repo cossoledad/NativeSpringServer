@@ -108,8 +108,6 @@ cat > "${VSCODE_DIR}/settings.json" <<'EOF'
     "**/.DS_Store": true,
     "**/__pycache__": true,
     "**/.pytest_cache": true,
-    "**/build": true,
-    "**/target": true,
     "**/dist": true,
     "**/CMakeFiles": true
   },
