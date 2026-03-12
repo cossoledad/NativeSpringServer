@@ -1,4 +1,5 @@
 {
+    "PROJECT_CONAN_CMD": "conan",
     "DEFAULT_CONAN_REMOTE_NAME": "conan-pr",
     "DEFAULT_CONAN_REMOTE_URL": "http://172.30.0.1:19091/repository/conan-pr/",
     "DEFAULT_MAVEN_RELEASES_REPO_ID": "maven-releases",

@@ -45,7 +45,7 @@ json_config_value() {
   local key="$1"
   local value
   value="$(
-    python3 - "${PROJECT_CONFIG_TEMPLATE}" "${PROJECT_CONFIG_FILE}" "${key}" <<'PY'
+    "${PYTHON_BIN:-python3}" - "${PROJECT_CONFIG_TEMPLATE}" "${PROJECT_CONFIG_FILE}" "${key}" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -70,6 +70,7 @@ PY
 
 JAVA_BIN="${JAVA_BIN:-$(command -v java || true)}"
 GDB_BIN="${GDB_BIN:-$(command -v gdb || true)}"
+PYTHON_BIN="${PYTHON_BIN:-$(command -v python3 || command -v python || true)}"
 BACKEND_ARTIFACT_ID="$(xml_text artifactId "${BACKEND_POM}")"
 BACKEND_VERSION="$(xml_text version "${BACKEND_POM}")"
 BACKEND_MAIN_CLASS="com.example.backend.BackendSmokeApplication"
@@ -91,6 +92,11 @@ fi
 if [[ -z "${GDB_BIN}" ]]; then
   GDB_BIN="gdb"
   log_warn "未检测到 gdb，可在运行前通过 GDB_BIN 环境变量覆盖"
+fi
+
+if [[ -z "${PYTHON_BIN}" ]]; then
+  log_err "未检测到 python3/python，请安装 Python 或通过 PYTHON_BIN 环境变量指定"
+  exit 1
 fi
 
 mkdir -p "${VSCODE_DIR}"
@@ -134,19 +140,23 @@ cat > "${VSCODE_DIR}/settings.json" <<'EOF'
 }
 EOF
 
-python3 - "${VSCODE_DIR}/settings.json" "${PROJECT_MAVEN_SETTINGS}" <<'PY'
+"${PYTHON_BIN}" - "${VSCODE_DIR}/settings.json" "${PROJECT_MAVEN_SETTINGS}" "${PYTHON_BIN}" <<'PY'
 import json
 import sys
 from pathlib import Path
 
 path = Path(sys.argv[1])
 maven_settings = sys.argv[2].strip()
+python_bin = sys.argv[3].strip()
 data = json.loads(path.read_text(encoding="utf-8"))
 
 if maven_settings:
     data["java.configuration.maven.userSettings"] = maven_settings
 else:
     data.pop("java.configuration.maven.userSettings", None)
+
+if python_bin:
+    data["python.defaultInterpreterPath"] = python_bin
 
 path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 PY
@@ -281,7 +291,7 @@ cat > "${VSCODE_DIR}/tasks.json" <<'EOF'
 }
 EOF
 
-python3 - "${VSCODE_DIR}/tasks.json" "${PROJECT_MAVEN_SETTINGS}" <<'PY'
+"${PYTHON_BIN}" - "${VSCODE_DIR}/tasks.json" "${PROJECT_MAVEN_SETTINGS}" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -399,6 +409,7 @@ log_ok "Wrote .vscode/launch.json"
 log_step "Summary"
 log_info "java: ${JAVA_BIN}"
 log_info "gdb: ${GDB_BIN}"
+log_info "python: ${PYTHON_BIN}"
 log_info "backend jar: ${BACKEND_JAR_REL}"
 if [[ -n "${PROJECT_MAVEN_SETTINGS}" ]]; then
   log_info "maven settings: ${PROJECT_MAVEN_SETTINGS}"

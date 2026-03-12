@@ -10,7 +10,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from Tools.invoke_support import invoke_task, remove_paths, run, task_scope
-from Tools.project_config import DEFAULT_CONAN_REMOTE_NAME, DEFAULT_CONAN_REMOTE_URL, PROJECT_MAVEN_SETTINGS
+from Tools.project_config import DEFAULT_CONAN_REMOTE_NAME, DEFAULT_CONAN_REMOTE_URL, PROJECT_CONAN_CMD, PROJECT_MAVEN_SETTINGS
 
 
 ROOT = Path(__file__).resolve().parent
@@ -49,7 +49,7 @@ def build(
     mvn_cmd="mvn",
     settings_file=PROJECT_MAVEN_SETTINGS,
     skip_tests=True,
-    conan_cmd="conan",
+    conan_cmd=PROJECT_CONAN_CMD,
     remote=DEFAULT_CONAN_REMOTE_NAME,
     remote_url=DEFAULT_CONAN_REMOTE_URL,
     profile="",
@@ -86,7 +86,7 @@ def rebuild(
     mvn_cmd="mvn",
     settings_file=PROJECT_MAVEN_SETTINGS,
     skip_tests=True,
-    conan_cmd="conan",
+    conan_cmd=PROJECT_CONAN_CMD,
     remote=DEFAULT_CONAN_REMOTE_NAME,
     remote_url=DEFAULT_CONAN_REMOTE_URL,
     profile="",

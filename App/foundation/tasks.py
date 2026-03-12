@@ -10,7 +10,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from Tools.invoke_support import remove_paths, run, task_scope
-from Tools.project_config import DEFAULT_CONAN_REMOTE_NAME, DEFAULT_CONAN_REMOTE_URL
+from Tools.project_config import DEFAULT_CONAN_REMOTE_NAME, DEFAULT_CONAN_REMOTE_URL, PROJECT_CONAN_CMD
 
 
 ROOT = Path(__file__).resolve().parent
@@ -23,7 +23,7 @@ def deps(
     remote_url=DEFAULT_CONAN_REMOTE_URL,
     profile="",
     build_type="Release",
-    conan_cmd="conan",
+    conan_cmd=PROJECT_CONAN_CMD,
 ):
     """Install foundation dependencies and generate Conan/CMake config."""
     with task_scope("App foundation deps"):
@@ -54,7 +54,7 @@ def build(
     remote_url=DEFAULT_CONAN_REMOTE_URL,
     profile="",
     build_type="Release",
-    conan_cmd="conan",
+    conan_cmd=PROJECT_CONAN_CMD,
     jobs="",
 ):
     """Generate config and build foundation native/JNI outputs."""
@@ -81,7 +81,7 @@ def rebuild(
     remote_url=DEFAULT_CONAN_REMOTE_URL,
     profile="",
     build_type="Release",
-    conan_cmd="conan",
+    conan_cmd=PROJECT_CONAN_CMD,
     jobs="",
 ):
     """Clean and rebuild foundation."""

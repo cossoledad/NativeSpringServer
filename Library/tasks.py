@@ -14,6 +14,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from Tools.invoke_support import run, success, task_scope
 from Tools.project_config import (
+    PROJECT_CONAN_CMD,
     DEFAULT_CONAN_REMOTE_NAME,
     DEFAULT_CONAN_REMOTE_URL,
     DEFAULT_MAVEN_RELEASES_REPO_ID,
@@ -227,7 +228,7 @@ def conan_remote(
     c,
     remote=DEFAULT_CONAN_REMOTE_NAME,
     url=DEFAULT_CONAN_REMOTE_URL,
-    conan_cmd="conan",
+    conan_cmd=PROJECT_CONAN_CMD,
 ):
     """Ensure Conan remote exists (idempotent)."""
     with task_scope("Library conan-remote"):
@@ -243,7 +244,7 @@ def conan_create(
     channel="",
     profile="",
     build_type="Release",
-    conan_cmd="conan",
+    conan_cmd=PROJECT_CONAN_CMD,
 ):
     """Create Conan package from local recipe."""
     with task_scope("Library conan-create"):
@@ -270,7 +271,7 @@ def conan_upload(
     user="",
     channel="",
     remote=DEFAULT_CONAN_REMOTE_NAME,
-    conan_cmd="conan",
+    conan_cmd=PROJECT_CONAN_CMD,
 ):
     """Upload Conan package to configured remote (package must exist locally)."""
     with task_scope("Library conan-upload"):
@@ -290,7 +291,7 @@ def conan_publish(
     remote_url=DEFAULT_CONAN_REMOTE_URL,
     profile="",
     build_type="Release",
-    conan_cmd="conan",
+    conan_cmd=PROJECT_CONAN_CMD,
 ):
     """One-shot remote add + create + upload for Conan2 native package."""
     with task_scope("Library conan-publish"):
@@ -403,7 +404,7 @@ def app_foundation(
     remote_url=DEFAULT_CONAN_REMOTE_URL,
     profile="",
     build_type="Release",
-    conan_cmd="conan",
+    conan_cmd=PROJECT_CONAN_CMD,
 ):
     """Run foundation app by consuming native package from Conan2 remote."""
     with task_scope("Library app-foundation"):
@@ -437,7 +438,7 @@ def app_backend(
     mvn_cmd="mvn",
     settings_file=PROJECT_MAVEN_SETTINGS,
     cloudlogger_version="",
-    conan_cmd="conan",
+    conan_cmd=PROJECT_CONAN_CMD,
     remote=DEFAULT_CONAN_REMOTE_NAME,
     remote_url=DEFAULT_CONAN_REMOTE_URL,
 ):
