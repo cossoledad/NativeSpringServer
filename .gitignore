@@ -57,3 +57,7 @@ Library/native/build/
 App/backend/target/
 App/foundation/build/
 App/foundation/target/
+
+
+# Temp
+Example/

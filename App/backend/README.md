@@ -8,7 +8,7 @@ The app exposes:
 
 ## Prerequisites
 
-- `com.example:conan-local-check:0.2.8` is already published to `maven-releases`.
+- `com.ty:native-spring-server-bridge:0.2.8` is already published to `maven-releases`.
 - Maven credentials for `maven-releases` are configured in `~/.m2/settings.xml`.
 - foundation SWIG math JNI library is built first (`cd Library && invoke app-foundation` or `cd Library && invoke app-backend`).
 

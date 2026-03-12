@@ -15,8 +15,18 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.example</groupId>
-      <artifactId>conan-local-check</artifactId>
+      <groupId>com.ty</groupId>
+      <artifactId>native-spring-server-bridge</artifactId>
+      <version>${cloudlogger.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.ty</groupId>
+      <artifactId>native-spring-server-bridge-logger</artifactId>
+      <version>${cloudlogger.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.ty</groupId>
+      <artifactId>native-spring-server-bridge-network</artifactId>
       <version>${cloudlogger.version}</version>
     </dependency>
     <dependency>

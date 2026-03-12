@@ -13,7 +13,7 @@ class CloudLoggerNativeConan(ConanFile):
     package_type = "shared-library"
 
     settings = "os", "arch", "compiler", "build_type"
-    exports_sources = "native/*"
+    exports_sources = "bridge-core/native/*"
     generators = "CMakeToolchain", "CMakeDeps"
 
     def layout(self):
@@ -21,18 +21,18 @@ class CloudLoggerNativeConan(ConanFile):
 
     def build(self):
         cmake = CMake(self)
-        cmake.configure(build_script_folder="native")
+        cmake.configure(build_script_folder="bridge-core/native")
         cmake.build()
 
     def package(self):
         copy(
             self,
             pattern="*.hpp",
-            src=os.path.join(self.source_folder, "native", "include"),
+            src=os.path.join(self.source_folder, "bridge-core", "native", "include"),
             dst=os.path.join(self.package_folder, "include"),
         )
 
-        native_lib_dir = os.path.join(self.source_folder, "target", "native", "lib")
+        native_lib_dir = os.path.join(self.source_folder, "bridge-core", "target", "native", "lib")
         for pattern in ("*.so", "*.dylib", "*.dll", "*.a", "*.lib"):
             copy(self, pattern=pattern, src=native_lib_dir, dst=os.path.join(self.package_folder, "lib"))
 

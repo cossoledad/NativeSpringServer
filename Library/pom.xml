@@ -3,49 +3,37 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.example</groupId>
-  <artifactId>conan-local-check</artifactId>
-  <version>0.2.9-SNAPSHOT</version>
-  <packaging>jar</packaging>
+  <groupId>com.ty</groupId>
+  <artifactId>native-spring-server-bridge-parent</artifactId>
+  <version>${revision}</version>
+  <packaging>pom</packaging>
 
   <properties>
+    <revision>0.1.1</revision>
     <maven.compiler.release>21</maven.compiler.release>
     <spring.boot.version>3.3.5</spring.boot.version>
+    <slf4j.version>2.0.13</slf4j.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-autoconfigure</artifactId>
-      <version>${spring.boot.version}</version>
-    </dependency>
-  </dependencies>
+  <modules>
+    <module>bridge-core</module>
+    <module>bridge-logger</module>
+    <module>bridge-network</module>
+  </modules>
 
-  <build>
-    <resources>
-      <resource>
-        <directory>src/main/resources</directory>
-      </resource>
-      <resource>
-        <directory>${project.basedir}/target/generated-classes/cloudlogger-swig</directory>
-        <includes>
-          <include>**/*.class</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>${project.basedir}/target/generated-classes/cloudlogger-impl</directory>
-        <includes>
-          <include>**/*.class</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>${project.basedir}/target/native</directory>
-        <targetPath>native</targetPath>
-        <includes>
-          <include>lib/**</include>
-        </includes>
-      </resource>
-    </resources>
-  </build>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-autoconfigure</artifactId>
+        <version>${spring.boot.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 </project>

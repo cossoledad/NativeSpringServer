@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -22,16 +23,20 @@ from Tools.project_config import (
     PROJECT_MAVEN_SETTINGS,
 )
 
-NATIVE_DIR = ROOT / "native"
+CORE_MODULE_DIR = ROOT / "bridge-core"
+LOGGER_MODULE_DIR = ROOT / "bridge-logger"
+NETWORK_MODULE_DIR = ROOT / "bridge-network"
+MODULE_DIRS = (CORE_MODULE_DIR, LOGGER_MODULE_DIR, NETWORK_MODULE_DIR)
+
+NATIVE_DIR = CORE_MODULE_DIR / "native"
 NATIVE_BUILD_DIR = NATIVE_DIR / "build"
-TARGET_DIR = ROOT / "target"
+TARGET_DIR = CORE_MODULE_DIR / "target"
 DIST_DIR = ROOT / "dist"
-JAVA_IMPL_SRC_DIR = ROOT / "src" / "impl-java"
-JAVA_IMPL_TARGET_DIR = TARGET_DIR / "generated-sources" / "cloudlogger-impl"
 NATIVE_PACKAGE_INCLUDE_DIR = DIST_DIR / "native" / "include"
 NATIVE_PACKAGE_LIB_DIR = DIST_DIR / "native" / "lib"
 APP_FOUNDATION_DIR = REPO_ROOT / "App" / "foundation"
 APP_BACKEND_DIR = REPO_ROOT / "App" / "backend"
+ROOT_POM = ROOT / "pom.xml"
 
 
 def _rm(path: Path) -> None:
@@ -51,12 +56,30 @@ def _conan_ref(name: str, version: str, user: str = "", channel: str = "") -> st
 
 
 def _pom_version() -> str:
-    root = ET.parse(ROOT / "pom.xml").getroot()
+    root = ET.parse(ROOT_POM).getroot()
     ns = {"m": "http://maven.apache.org/POM/4.0.0"}
+    revision = root.findtext("m:properties/m:revision", namespaces=ns)
+    if revision:
+        return revision.strip()
     version = root.findtext("m:version", namespaces=ns)
     if not version:
-        raise RuntimeError("cannot read <version> from pom.xml")
+        raise RuntimeError("cannot read <version> from root pom.xml")
     return version.strip()
+
+
+def _set_pom_version(version: str) -> None:
+    version = version.strip()
+    if not version:
+        raise RuntimeError("version must not be empty")
+
+    text = ROOT_POM.read_text(encoding="utf-8")
+    if re.search(r"<revision>[^<]+</revision>", text):
+        text = re.sub(r"<revision>[^<]+</revision>", f"<revision>{version}</revision>", text, count=1)
+    elif re.search(r"<version>[^<]+</version>", text):
+        text = re.sub(r"<version>[^<]+</version>", f"<version>{version}</version>", text, count=1)
+    else:
+        raise RuntimeError("cannot find <revision> or <version> in root pom.xml")
+    ROOT_POM.write_text(text, encoding="utf-8")
 
 
 def _maven_settings_arg(settings_file: str) -> str:
@@ -75,35 +98,7 @@ def _compile_swig_java(c) -> None:
     _rm(classes_dir)
     classes_dir.mkdir(parents=True, exist_ok=True)
 
-    c.run(f"javac --release 21 -d {classes_dir} " + " ".join(java_files), pty=True)
-
-
-def _compile_impl_java(c, mvn_cmd: str = "mvn", settings_file: str = PROJECT_MAVEN_SETTINGS) -> None:
-    impl_src_dir = TARGET_DIR / "generated-sources" / "cloudlogger-impl"
-    classes_dir = TARGET_DIR / "generated-classes" / "cloudlogger-impl"
-    classpath_file = TARGET_DIR / "compile.classpath"
-
-    java_files = sorted(str(p) for p in impl_src_dir.rglob("*.java"))
-    if not java_files:
-        raise RuntimeError("no implementation Java sources found, run java-prepare first")
-
-    _rm(classes_dir)
-    classes_dir.mkdir(parents=True, exist_ok=True)
-    settings_arg = _maven_settings_arg(settings_file)
-    c.run(
-        (
-            f"{mvn_cmd} {settings_arg} -q -DincludeScope=compile "
-            f"dependency:build-classpath -Dmdep.outputFile={classpath_file}"
-        ).strip(),
-        pty=True,
-    )
-    dep_cp = classpath_file.read_text(encoding="utf-8").strip()
-    swig_cp = TARGET_DIR / "generated-classes" / "cloudlogger-swig"
-    compile_cp = f"{swig_cp}:{dep_cp}" if dep_cp else str(swig_cp)
-    c.run(
-        f"javac --release 21 -cp {compile_cp} -d {classes_dir} " + " ".join(java_files),
-        pty=True,
-    )
+    run(c, f"javac --release 21 -d {classes_dir} " + " ".join(java_files), title="Compile SWIG Java classes")
 
 
 @task
@@ -152,39 +147,21 @@ def native_package(c):
 
 
 @task
-def java_prepare(c):
-    """Copy Java implementation classes into generated-sources."""
-    with task_scope("Library java-prepare"):
-        _rm(JAVA_IMPL_TARGET_DIR)
-        JAVA_IMPL_TARGET_DIR.mkdir(parents=True, exist_ok=True)
-
-        if not JAVA_IMPL_SRC_DIR.exists():
-            raise RuntimeError(f"missing implementation source dir: {JAVA_IMPL_SRC_DIR}")
-
-        for src_file in JAVA_IMPL_SRC_DIR.rglob("*.java"):
-            rel = src_file.relative_to(JAVA_IMPL_SRC_DIR)
-            dst = JAVA_IMPL_TARGET_DIR / rel
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(src_file, dst)
-
-
-@task
 def java_build(c, skip_tests=True, mvn_cmd="mvn", settings_file=PROJECT_MAVEN_SETTINGS):
-    """Build Java artifact with generated SWIG and implementation sources."""
+    """Build Java artifacts for all bridge modules."""
     with task_scope("Library java-build"):
         skip_flag = "-DskipTests" if skip_tests else ""
         settings_arg = _maven_settings_arg(settings_file)
-        run(c, f"{mvn_cmd} {settings_arg} clean".strip(), title="Clean Maven outputs")
+        run(c, f"{mvn_cmd} {settings_arg} clean".strip(), cwd=ROOT, title="Clean Maven outputs")
         native_build(c)
-        java_prepare(c)
         _compile_swig_java(c)
-        _compile_impl_java(c, mvn_cmd=mvn_cmd, settings_file=settings_file)
         run(
             c,
             (
                 f"{mvn_cmd} {settings_arg} package {skip_flag} "
                 "-Dmaven.compiler.useIncrementalCompilation=false"
             ).strip(),
+            cwd=ROOT,
             title="Package library jar",
         )
 
@@ -192,7 +169,9 @@ def java_build(c, skip_tests=True, mvn_cmd="mvn", settings_file=PROJECT_MAVEN_SE
 @task(pre=[java_build])
 def java_package(c):
     """Copy jar artifact into dist/java."""
-    jars = sorted((TARGET_DIR).glob("*.jar"))
+    jars: list[Path] = []
+    for module_dir in MODULE_DIRS:
+        jars.extend(sorted((module_dir / "target").glob("*.jar")))
     if not jars:
         raise RuntimeError("jar artifact not found, run `invoke java-build` first")
 
@@ -209,7 +188,8 @@ def java_package(c):
 @task(pre=[native_clean])
 def clean(c):
     """Clean all build outputs."""
-    _rm(TARGET_DIR)
+    for module_dir in MODULE_DIRS:
+        _rm(module_dir / "target")
     _rm(DIST_DIR)
 
 
@@ -322,6 +302,7 @@ def java_publish(
     skip_tests=True,
     mvn_cmd="mvn",
     settings_file=PROJECT_MAVEN_SETTINGS,
+    keep_version=False,
 ):
     """
     Publish Java core library to Maven repository.
@@ -353,19 +334,11 @@ def java_publish(
         changed = deploy_version != origin_version
         try:
             if changed:
-                run(
-                    c,
-                    (
-                        f"{mvn_cmd} {settings_arg} versions:set "
-                        f"-DnewVersion={deploy_version} -DgenerateBackupPoms=false"
-                    ).strip(),
-                    title="Switch Maven version",
-                )
-            run(c, f"{mvn_cmd} {settings_arg} clean".strip(), title="Clean Maven outputs")
+                _set_pom_version(deploy_version)
+                success(f"Updated root pom revision to: {deploy_version}")
+            run(c, f"{mvn_cmd} {settings_arg} clean".strip(), cwd=ROOT, title="Clean Maven outputs")
             native_build(c)
-            java_prepare(c)
             _compile_swig_java(c)
-            _compile_impl_java(c, mvn_cmd=mvn_cmd, settings_file=settings_file)
             _rm(TARGET_DIR / "classes")
             run(
                 c,
@@ -373,6 +346,7 @@ def java_publish(
                     f"{mvn_cmd} {settings_arg} package {skip_flag} "
                     "-Dmaven.compiler.useIncrementalCompilation=false"
                 ).strip(),
+                cwd=ROOT,
                 title="Package library jar",
             )
             run(
@@ -381,20 +355,69 @@ def java_publish(
                     f"{mvn_cmd} {settings_arg} deploy {skip_flag} {deploy_repo} "
                     "-Dmaven.main.skip=true"
                 ).strip(),
+                cwd=ROOT,
                 title="Deploy library jar",
             )
         finally:
-            if changed:
-                run(
-                    c,
-                    (
-                        f"{mvn_cmd} {settings_arg} versions:set "
-                        f"-DnewVersion={origin_version} -DgenerateBackupPoms=false"
-                    ).strip(),
-                    title="Restore Maven version",
-                )
+            if changed and not keep_version:
+                _set_pom_version(origin_version)
+                success(f"Restored root pom revision to: {origin_version}")
 
         success(f"Maven publish done: {deploy_version} -> {repo_id} ({repo_url})")
+
+
+@task(name="release-publish")
+def release_publish(
+    c,
+    version,
+    name="cloudlogger-native",
+    user="",
+    channel="",
+    remote=DEFAULT_CONAN_REMOTE_NAME,
+    remote_url=DEFAULT_CONAN_REMOTE_URL,
+    profile="",
+    build_type="Release",
+    conan_cmd=PROJECT_CONAN_CMD,
+    repo_id=DEFAULT_MAVEN_RELEASES_REPO_ID,
+    repo_url=DEFAULT_MAVEN_RELEASES_REPO_URL,
+    skip_tests=True,
+    mvn_cmd="mvn",
+    settings_file=PROJECT_MAVEN_SETTINGS,
+):
+    """
+    Publish Conan + Maven artifacts with the same version and persist it into root pom.
+    """
+    with task_scope("Library release-publish"):
+        target_version = version.strip()
+        if not target_version:
+            raise RuntimeError("`--version` is required, e.g. `invoke release-publish --version 0.3.0`")
+
+        _set_pom_version(target_version)
+        success(f"Root pom revision set to: {target_version}")
+
+        conan_publish(
+            c,
+            name=name,
+            version=target_version,
+            user=user,
+            channel=channel,
+            remote=remote,
+            remote_url=remote_url,
+            profile=profile,
+            build_type=build_type,
+            conan_cmd=conan_cmd,
+        )
+        java_publish(
+            c,
+            repo_id=repo_id,
+            repo_url=repo_url,
+            version=target_version,
+            skip_tests=skip_tests,
+            mvn_cmd=mvn_cmd,
+            settings_file=settings_file,
+            keep_version=True,
+        )
+        success(f"Release publish done for version: {target_version}")
 
 
 @task(name="app-foundation", aliases=["test-foundation"])

@@ -1,4 +1,4 @@
-# conan-local-check Architecture
+# native-spring-server-bridge Architecture
 
 ## 1. reference 项目分析
 参考项目：`reference/JniMvnLib/CloudLogger`
@@ -34,15 +34,12 @@
 │   └── backend                              # Maven 消费 Java 包的 Spring Boot 主应用
 ├── Library
 │   ├── conanfile.py                         # Native Conan recipe
-│   ├── native
-│   │   ├── include/cloud_logger_bridge.hpp  # C++ 抽象接口 + registry
-│   │   ├── src/cloud_logger_bridge.cpp      # C++ registry 实现
-│   │   ├── swig/cloud_logger.i              # SWIG 接口定义
-│   │   └── CMakeLists.txt                   # native + swig 构建
-│   ├── src
-│   │   ├── impl-java/com/example/cloudlogger
-│   │   └── main/resources/META-INF
-│   ├── pom.xml                              # Java 打包与 generated-sources 接入
+│   ├── bridge-core
+│   │   ├── native                           # C++ bridge + SWIG
+│   │   └── pom.xml                          # core 模块（com.ty:native-spring-server-bridge）
+│   ├── bridge-logger                        # Java 日志实现模块（Slf4j）
+│   ├── bridge-network                       # 网络模块（String GET/POST）
+│   ├── pom.xml                              # parent 聚合 pom
 │   └── tasks.py                             # invoke 构建脚本
 ├── Script
 │   └── generate_vscode_config.sh            # 生成本机专用 VS Code 配置
@@ -52,20 +49,18 @@
 ```
 
 构建产物约定：
-- SWIG 生成 Java：`Library/target/generated-sources/cloudlogger-swig`
-- Java 实现复制目录：`Library/target/generated-sources/cloudlogger-impl`
-- Native so 输出：`Library/target/native/lib`
+- SWIG 生成 Java：`Library/bridge-core/target/generated-sources/cloudlogger-swig`
+- Native so 输出：`Library/bridge-core/target/native/lib`
 - 最终分发：`Library/dist/native`、`Library/dist/java`
 
 ## 3. 构建链路
-1. `Library/native/CMakeLists.txt` 构建：
+1. `Library/bridge-core/native/CMakeLists.txt` 构建：
    - `libcloudlogger_bridge.so`
    - `libcloudlogger_jni.so`
    - SWIG Java 绑定代码
-2. `Library/tasks.py::java_prepare` 把 `Library/src/impl-java/**/*.java` 复制到 target 生成目录。
-3. Maven 通过 `build-helper-maven-plugin` 把 SWIG 和 impl 两类 generated sources 一并编译。
-4. Maven 将 `Library/target/native/lib` 作为资源打进 jar（路径：`native/lib`）。
-5. Spring 初始化器在应用启动时加载 native 并完成 registry 注册。
+2. `Library/tasks.py::java_build` 先编译 SWIG Java classes，再由 Maven 构建多模块 Java 包。
+3. core Maven 将 `Library/bridge-core/target/native/lib` 作为资源打进 jar（路径：`native/lib`）。
+4. logger 模块中的 Spring 初始化器在应用启动时加载 native 并完成 registry 注册。
 
 ## 4. invoke 基础命令
 - `Tools/invoke_support.py` 提供统一的任务头、成功/失败提示、颜色输出和子任务调用封装。
@@ -77,8 +72,7 @@
 - `invoke native-clean`：清理 native 产物
 - `invoke native-build`：构建 C++/SWIG
 - `invoke native-package`：产出 `dist/native`（headers + so）
-- `invoke java-prepare`：复制 Java 实现层到 target
-- `invoke java-build`：构建 jar（自动触发 native-build + java-prepare）
+- `invoke java-build`：构建多模块 Java jar（自动触发 native-build + SWIG Java 编译）
 - `invoke java-package`：产出 `dist/java/*.jar`
 - `invoke clean`：清理全部构建目录
 - `invoke build`：完整构建 native + java
@@ -89,6 +83,7 @@
 - `invoke conan-publish`：一键完成 remote + create + upload
 - `invoke java-publish`：发布 Java 核心库到 Maven 仓库（默认 `maven-releases`）
   - 认证信息来自本机 `~/.m2/settings.xml` 的 `<server id="maven-releases">...`
+- `invoke release-publish --version X.Y.Z`：同版本发布 Conan + Maven，并持久更新 `Library/pom.xml` 的 `<revision>`
 - `invoke app-foundation`：执行 Conan2 消费链路（install + build）
 - `invoke app-backend`：执行 Maven 消费链路（spring-boot:run）
   - 兼容旧名字：`test-foundation`、`test-backend`

@@ -164,9 +164,11 @@ source /home/ganjb/pyvenv/conan2py/bin/activate
 - Maven 包构建与发布
 
 关键目录：
-- `Library/native`：C++ bridge 与 SWIG 接口
-- `Library/src/impl-java`：Java 实现层
-- `Library/src/main/resources`：Spring 自动装配资源
+- `Library/bridge-core/native`：C++ bridge 与 SWIG 接口
+- `Library/bridge-core`：C++/SWIG/JNI bridge 核心模块
+- `Library/bridge-core/src/main/resources`：核心 Spring 自动装配资源
+- `Library/bridge-logger`：Slf4j 日志模块
+- `Library/bridge-network`：基础网络模块（String GET/POST）
 - `Library/tasks.py`：库层 invoke 任务入口
 
 ### App
@@ -235,7 +237,12 @@ invoke native-build
 invoke java-build
 invoke build
 invoke package
+invoke release-publish --version 0.3.0
 ```
+
+说明：
+- Library Maven 版本由 `Library/pom.xml` 的 `<revision>` 单点维护，子模块通过 `${revision}` 继承。
+- `invoke release-publish --version X.Y.Z` 会先更新 `<revision>`，再用同版本发布 Conan 与 Maven 包。
 
 ## VS Code 配置生成
 
