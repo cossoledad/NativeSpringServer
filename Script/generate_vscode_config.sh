@@ -76,7 +76,6 @@ BACKEND_VERSION="$(xml_text version "${BACKEND_POM}")"
 BACKEND_MAIN_CLASS="com.example.backend.BackendSmokeApplication"
 BACKEND_JAR_REL="App/backend/target/${BACKEND_ARTIFACT_ID}-${BACKEND_VERSION}.jar"
 FOUNDATION_LIB_DIR_REL="App/foundation/build/native/lib"
-FOUNDATION_EXE_REL="App/foundation/build/foundation_smoke"
 PROJECT_MAVEN_SETTINGS="$(json_config_value PROJECT_MAVEN_SETTINGS)"
 
 if [[ -z "${BACKEND_ARTIFACT_ID}" || -z "${BACKEND_VERSION}" ]]; then
@@ -126,6 +125,7 @@ cat > "${VSCODE_DIR}/settings.json" <<'EOF'
     "**/dist": true
   },
   "java.import.exclusions": [
+    "**/Library/**",
     "Library/**",
     "**/target/**",
     "**/build/**",
@@ -372,32 +372,6 @@ cat > "${VSCODE_DIR}/launch.json" <<EOF
         "\${workspaceFolder}/App/backend/target/dependency/*"
       ],
       "preLaunchTask": "Backend: debug classpath"
-    },
-    {
-      "name": "Foundation Smoke (Debug C++)",
-      "type": "cppdbg",
-      "request": "launch",
-      "program": "\${workspaceFolder}/${FOUNDATION_EXE_REL}",
-      "args": [],
-      "cwd": "\${workspaceFolder}/App/foundation",
-      "environment": [
-        {
-          "name": "LD_LIBRARY_PATH",
-          "value": "\${workspaceFolder}/${FOUNDATION_LIB_DIR_REL}:\${env:LD_LIBRARY_PATH}"
-        }
-      ],
-      "MIMode": "gdb",
-      "miDebuggerPath": "${GDB_BIN}",
-      "externalConsole": false,
-      "stopAtEntry": false,
-      "setupCommands": [
-        {
-          "description": "Enable pretty printing",
-          "text": "-enable-pretty-printing",
-          "ignoreFailures": true
-        }
-      ],
-      "preLaunchTask": "Foundation: build"
     }
   ]
 }

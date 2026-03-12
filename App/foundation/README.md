@@ -10,10 +10,10 @@ This test project simulates a standalone foundation math library:
 - Conan remote exists and points to your server:
 
 ```bash
-conan remote add conan-pr http://172.27.128.1:19091/repository/conan-pr/ --force
+conan remote add conan-pr http://172.30.0.1:19091/repository/conan-pr/ --force
 ```
 
-## Build & Run
+## Build
 
 Preferred invoke workflow:
 
@@ -37,9 +37,4 @@ cd App/foundation
 conan install . --build=missing -r conan-pr -s build_type=Release -of build
 cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
-./build/foundation_smoke
 ```
-
-Expected output includes:
-
-- `foundation add(7, 5) = 12`

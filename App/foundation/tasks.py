@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -16,6 +17,32 @@ from Tools.project_config import DEFAULT_CONAN_REMOTE_NAME, DEFAULT_CONAN_REMOTE
 ROOT = Path(__file__).resolve().parent
 BUILD_DIR = ROOT / "build"
 TARGET_DIR = ROOT / "target"
+
+SUPPRESS_WARNINGS_PATTERNS = (
+    re.compile(r"^\s*@SuppressWarnings\(\"deprecation\"\)\s*$", re.MULTILINE),
+    re.compile(r"^\s*@SuppressWarnings\(\{\"deprecation\",\s*\"removal\"\}\)\s*$", re.MULTILINE),
+)
+
+
+def _sanitize_generated_java() -> int:
+    java_root = BUILD_DIR / "java"
+    if not java_root.exists():
+        return 0
+
+    changed = 0
+    for java_file in java_root.rglob("*.java"):
+        text = java_file.read_text(encoding="utf-8")
+        new_text = text
+        for pattern in SUPPRESS_WARNINGS_PATTERNS:
+            new_text = pattern.sub("", new_text)
+        # Collapse extra blank lines produced by removals.
+        new_text = re.sub(r"\n{3,}", "\n\n", new_text)
+        if new_text != text:
+            java_file.write_text(new_text, encoding="utf-8")
+            changed += 1
+    return changed
+
+
 @task
 def deps(
     c,
@@ -72,6 +99,9 @@ def build(
             title="Configure CMake",
         )
         run(c, f"cmake --build build {jobs_arg}", cwd=ROOT, title="Build foundation")
+        sanitized = _sanitize_generated_java()
+        if sanitized:
+            print(f"Sanitized SWIG Java warnings in {sanitized} generated file(s).")
 
 
 @task

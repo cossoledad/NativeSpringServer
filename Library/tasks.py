@@ -406,7 +406,7 @@ def app_foundation(
     build_type="Release",
     conan_cmd=PROJECT_CONAN_CMD,
 ):
-    """Run foundation app by consuming native package from Conan2 remote."""
+    """Build foundation JNI library by consuming native package from Conan2 remote."""
     with task_scope("Library app-foundation"):
         profile_arg = f"-pr {profile}" if profile else ""
         run(c, f"{conan_cmd} remote add {remote} {remote_url} --force", title="Configure Conan remote")
@@ -429,7 +429,6 @@ def app_foundation(
             title="Configure foundation CMake",
         )
         run(c, f"cd {APP_FOUNDATION_DIR} && cmake --build build -j", title="Build foundation")
-        run(c, f"cd {APP_FOUNDATION_DIR} && ./build/foundation_smoke", title="Run foundation app")
 
 
 @task(name="app-backend", aliases=["test-backend"])

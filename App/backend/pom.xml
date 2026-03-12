@@ -48,7 +48,7 @@
             </goals>
             <configuration>
               <sources>
-                <source>${project.basedir}/../foundation/target/generated-sources/foundation-math-swig</source>
+                <source>${project.basedir}/../foundation/build/java</source>
               </sources>
             </configuration>
           </execution>

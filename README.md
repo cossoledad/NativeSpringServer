@@ -255,7 +255,6 @@ bash Script/generate_vscode_config.sh
 - 调试 App 服务（Java）
 - 启动 App 服务并调试 foundation / JNI（C++）
 - 单独调试 backend
-- 单独调试 foundation
 
 说明：
 - `Script/generate_vscode_config.sh` 会从 `Config/project-config*.json` 读取 `PROJECT_MAVEN_SETTINGS`

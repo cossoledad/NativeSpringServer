@@ -89,7 +89,7 @@
 - `invoke conan-publish`：一键完成 remote + create + upload
 - `invoke java-publish`：发布 Java 核心库到 Maven 仓库（默认 `maven-releases`）
   - 认证信息来自本机 `~/.m2/settings.xml` 的 `<server id="maven-releases">...`
-- `invoke app-foundation`：执行 Conan2 消费链路（install + build + run）
+- `invoke app-foundation`：执行 Conan2 消费链路（install + build）
 - `invoke app-backend`：执行 Maven 消费链路（spring-boot:run）
   - 兼容旧名字：`test-foundation`、`test-backend`
 
