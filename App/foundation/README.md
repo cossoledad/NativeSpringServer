@@ -2,7 +2,7 @@
 
 This test project simulates a standalone foundation math library:
 - foundation 提供 `MathApi::add(a, b)`，并通过 SWIG 导出给 Java/backend 使用。
-- foundation 内部通过 Conan2 引入日志库 `nss-native`，并在计算时调用 `CloudLoggerRegistry.upload(...)`。
+- foundation 内部通过 Conan2 引入桥接库 `nss-native`，并调用 `CloudLoggerRegistry::info/warn/error` 与 `CloudNetworkRegistry::get/post`。
 
 ## Prerequisites
 

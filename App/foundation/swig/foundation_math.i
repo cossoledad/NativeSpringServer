@@ -4,4 +4,5 @@
 #include "foundation_math.hpp"
 %}
 
+%include <std_string.i>
 %include "foundation_math.hpp"

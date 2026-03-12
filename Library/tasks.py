@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import shutil
-import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -37,6 +36,13 @@ NATIVE_PACKAGE_LIB_DIR = DIST_DIR / "native" / "lib"
 APP_FOUNDATION_DIR = REPO_ROOT / "App" / "foundation"
 APP_BACKEND_DIR = REPO_ROOT / "App" / "backend"
 ROOT_POM = ROOT / "pom.xml"
+MAVEN_NS = "http://maven.apache.org/POM/4.0.0"
+NS = {"m": MAVEN_NS}
+MODULE_POMS = (
+    CORE_MODULE_DIR / "pom.xml",
+    LOGGER_MODULE_DIR / "pom.xml",
+    NETWORK_MODULE_DIR / "pom.xml",
+)
 
 
 def _rm(path: Path) -> None:
@@ -57,11 +63,7 @@ def _conan_ref(name: str, version: str, user: str = "", channel: str = "") -> st
 
 def _pom_version() -> str:
     root = ET.parse(ROOT_POM).getroot()
-    ns = {"m": "http://maven.apache.org/POM/4.0.0"}
-    revision = root.findtext("m:properties/m:revision", namespaces=ns)
-    if revision:
-        return revision.strip()
-    version = root.findtext("m:version", namespaces=ns)
+    version = root.findtext("m:version", namespaces=NS)
     if not version:
         raise RuntimeError("cannot read <version> from root pom.xml")
     return version.strip()
@@ -71,15 +73,24 @@ def _set_pom_version(version: str) -> None:
     version = version.strip()
     if not version:
         raise RuntimeError("version must not be empty")
+    ET.register_namespace("", MAVEN_NS)
 
-    text = ROOT_POM.read_text(encoding="utf-8")
-    if re.search(r"<revision>[^<]+</revision>", text):
-        text = re.sub(r"<revision>[^<]+</revision>", f"<revision>{version}</revision>", text, count=1)
-    elif re.search(r"<version>[^<]+</version>", text):
-        text = re.sub(r"<version>[^<]+</version>", f"<version>{version}</version>", text, count=1)
-    else:
-        raise RuntimeError("cannot find <revision> or <version> in root pom.xml")
-    ROOT_POM.write_text(text, encoding="utf-8")
+    root_tree = ET.parse(ROOT_POM)
+    root_node = root_tree.getroot()
+    root_version = root_node.find("m:version", NS)
+    if root_version is None:
+        raise RuntimeError("cannot find root <version> in pom.xml")
+    root_version.text = version
+    root_tree.write(ROOT_POM, encoding="utf-8", xml_declaration=False)
+
+    for module_pom in MODULE_POMS:
+        module_tree = ET.parse(module_pom)
+        module_root = module_tree.getroot()
+        parent_version = module_root.find("m:parent/m:version", NS)
+        if parent_version is None:
+            raise RuntimeError(f"cannot find parent version in {module_pom}")
+        parent_version.text = version
+        module_tree.write(module_pom, encoding="utf-8", xml_declaration=False)
 
 
 def _maven_settings_arg(settings_file: str) -> str:
@@ -328,14 +339,14 @@ def java_publish(
             )
 
         skip_flag = "-DskipTests" if skip_tests else ""
-        deploy_repo = f"-DaltDeploymentRepository={repo_id}::default::{repo_url}"
+        deploy_repo = f"-DaltDeploymentRepository={repo_id}::{repo_url}"
         settings_arg = _maven_settings_arg(settings_file)
 
         changed = deploy_version != origin_version
         try:
             if changed:
                 _set_pom_version(deploy_version)
-                success(f"Updated root pom revision to: {deploy_version}")
+                success(f"Updated pom versions to: {deploy_version}")
             run(c, f"{mvn_cmd} {settings_arg} clean".strip(), cwd=ROOT, title="Clean Maven outputs")
             native_build(c)
             _compile_swig_java(c)
@@ -361,7 +372,7 @@ def java_publish(
         finally:
             if changed and not keep_version:
                 _set_pom_version(origin_version)
-                success(f"Restored root pom revision to: {origin_version}")
+                success(f"Restored pom versions to: {origin_version}")
 
         success(f"Maven publish done: {deploy_version} -> {repo_id} ({repo_url})")
 
@@ -393,7 +404,7 @@ def release_publish(
             raise RuntimeError("`--version` is required, e.g. `invoke release-publish --version 0.3.0`")
 
         _set_pom_version(target_version)
-        success(f"Root pom revision set to: {target_version}")
+        success(f"Pom versions set to: {target_version}")
 
         conan_publish(
             c,

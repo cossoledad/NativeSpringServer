@@ -1,5 +1,5 @@
 [requires]
-nss-native/0.1.1
+nss-native/0.1.3
 
 [generators]
 CMakeDeps
