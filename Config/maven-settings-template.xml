@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 https://maven.apache.org/xsd/settings-1.2.0.xsd">
+  <!--
+    Project-local Maven settings template.
+    - Keep this template in git.
+    - Generate Config/maven-settings.xml for each machine.
+  -->
+
+  <!-- Optional: isolate local repository to project path -->
+  <localRepository>__LOCAL_REPOSITORY__</localRepository>
+
+  <servers>
+    <server>
+      <id>__RELEASES_REPO_ID__</id>
+      <username>__RELEASES_REPO_USERNAME__</username>
+      <password>__RELEASES_REPO_PASSWORD__</password>
+    </server>
+  </servers>
+
+  <mirrors>
+    <mirror>
+      <id>project-maven-releases</id>
+      <mirrorOf>__RELEASES_REPO_ID__</mirrorOf>
+      <url>__RELEASES_REPO_URL__</url>
+    </mirror>
+  </mirrors>
+
+  <profiles>
+  </profiles>
+
+  <activeProfiles>
+  </activeProfiles>
+</settings>

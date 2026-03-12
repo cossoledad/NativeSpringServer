@@ -10,6 +10,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from Tools.invoke_support import invoke_task, remove_paths, run, task_scope
+from Tools.project_config import DEFAULT_CONAN_REMOTE_NAME, DEFAULT_CONAN_REMOTE_URL, PROJECT_MAVEN_SETTINGS
 
 
 ROOT = Path(__file__).resolve().parent
@@ -18,11 +19,21 @@ FOUNDATION_DIR = APP_DIR / "foundation"
 TARGET_DIR = ROOT / "target"
 
 
+def _maven_settings_arg(settings_file: str) -> str:
+    return f"-s {settings_file}" if settings_file else ""
+
+
 @task
-def deps(c, mvn_cmd="mvn"):
+def deps(c, mvn_cmd="mvn", settings_file=PROJECT_MAVEN_SETTINGS):
     """Resolve backend Maven dependencies."""
     with task_scope("App backend deps"):
-        run(c, f"{mvn_cmd} -q dependency:go-offline", cwd=ROOT, title="Resolve Maven dependencies")
+        settings_arg = _maven_settings_arg(settings_file)
+        run(
+            c,
+            f"{mvn_cmd} {settings_arg} -q dependency:go-offline".strip(),
+            cwd=ROOT,
+            title="Resolve Maven dependencies",
+        )
 
 
 @task
@@ -36,17 +47,18 @@ def clean(c):
 def build(
     c,
     mvn_cmd="mvn",
+    settings_file=PROJECT_MAVEN_SETTINGS,
     skip_tests=True,
     conan_cmd="conan",
-    remote="conan-pr",
-    remote_url="http://172.27.128.1:19091/repository/conan-pr/",
+    remote=DEFAULT_CONAN_REMOTE_NAME,
+    remote_url=DEFAULT_CONAN_REMOTE_URL,
     profile="",
     foundation_build_type="Release",
     foundation_jobs="",
 ):
     """Build foundation first, then build backend."""
     with task_scope("App backend build"):
-        deps(c, mvn_cmd=mvn_cmd)
+        deps(c, mvn_cmd=mvn_cmd, settings_file=settings_file)
         foundation_args = [
             f"--remote={remote}",
             f"--remote-url={remote_url}",
@@ -59,9 +71,10 @@ def build(
             foundation_args.append(f"--jobs={foundation_jobs}")
         invoke_task(c, search_root=FOUNDATION_DIR, task_name="build", args=foundation_args, cwd=ROOT)
         skip_flag = "-DskipTests" if skip_tests else ""
+        settings_arg = _maven_settings_arg(settings_file)
         run(
             c,
-            f"{mvn_cmd} clean package {skip_flag}".strip(),
+            f"{mvn_cmd} {settings_arg} clean package {skip_flag}".strip(),
             cwd=ROOT,
             title="Build backend package",
         )
@@ -71,10 +84,11 @@ def build(
 def rebuild(
     c,
     mvn_cmd="mvn",
+    settings_file=PROJECT_MAVEN_SETTINGS,
     skip_tests=True,
     conan_cmd="conan",
-    remote="conan-pr",
-    remote_url="http://172.27.128.1:19091/repository/conan-pr/",
+    remote=DEFAULT_CONAN_REMOTE_NAME,
+    remote_url=DEFAULT_CONAN_REMOTE_URL,
     profile="",
     foundation_build_type="Release",
     foundation_jobs="",
@@ -85,6 +99,7 @@ def rebuild(
         build(
             c,
             mvn_cmd=mvn_cmd,
+            settings_file=settings_file,
             skip_tests=skip_tests,
             conan_cmd=conan_cmd,
             remote=remote,

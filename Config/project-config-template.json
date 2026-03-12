@@ -1,7 +1,7 @@
 {
     "DEFAULT_CONAN_REMOTE_NAME": "conan-pr",
-    "DEFAULT_CONAN_REMOTE_URL": "http://172.27.128.1:19091/repository/conan-pr/",
+    "DEFAULT_CONAN_REMOTE_URL": "http://172.30.0.1:19091/repository/conan-pr/",
     "DEFAULT_MAVEN_RELEASES_REPO_ID": "maven-releases",
-    "DEFAULT_MAVEN_RELEASES_REPO_URL": "http://172.27.128.1:19091/repository/maven-releases/",
-    "PROJECT_MAVEN_SETTINGS": ""
+    "DEFAULT_MAVEN_RELEASES_REPO_URL": "http://172.30.0.1:19091/repository/maven-releases/",
+    "PROJECT_MAVEN_SETTINGS": "Config/maven-settings.xml"
 }

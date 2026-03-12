@@ -10,15 +10,12 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from Tools.invoke_support import remove_paths, run, task_scope
+from Tools.project_config import DEFAULT_CONAN_REMOTE_NAME, DEFAULT_CONAN_REMOTE_URL
 
 
 ROOT = Path(__file__).resolve().parent
 BUILD_DIR = ROOT / "build"
 TARGET_DIR = ROOT / "target"
-DEFAULT_CONAN_REMOTE_NAME = "conan-pr"
-DEFAULT_CONAN_REMOTE_URL = "http://172.27.128.1:19091/repository/conan-pr/"
-
-
 @task
 def deps(
     c,

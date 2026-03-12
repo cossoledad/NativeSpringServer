@@ -188,11 +188,21 @@ source /home/ganjb/pyvenv/conan2py/bin/activate
 - 跨子项目 invoke 调用封装
 - 按终端情况自动切换 PTY，尽量保证日志实时输出
 
+`Tools/project_config.py` 提供统一的项目配置读取能力：
+- 优先读取 `Config/project-config.json`（机器本地覆盖）
+- 回退读取 `Config/project-config-template.json`（仓库默认模板）
+- 上传相关默认参数（Conan/Maven）与 Maven settings 均从此处获取
+
 ### Script
 
 `Script/generate_vscode_config.sh` 用于在每台机器本地生成 `.vscode` 配置。
 
 因为 Java、GDB、工作目录等环境因机器而异，所以 VS Code 配置不直接入库，而是本地生成。
+
+`Script/generate_maven_settings.sh` 用于基于模板生成项目内 Maven settings：
+- 模板：`Config/maven-settings-template.xml`
+- 当前机器配置：`Config/maven-settings.xml`
+- 默认本地仓库：`${repo}/.m2/repository`（避免污染用户目录下全局仓库）
 
 ## 常用命令
 
@@ -246,6 +256,17 @@ bash Script/generate_vscode_config.sh
 - 启动 App 服务并调试 foundation / JNI（C++）
 - 单独调试 backend
 - 单独调试 foundation
+
+说明：
+- `Script/generate_vscode_config.sh` 会从 `Config/project-config*.json` 读取 `PROJECT_MAVEN_SETTINGS`
+- 若该值非空，会写入 `.vscode/settings.json` 的 `java.configuration.maven.userSettings`
+
+建议先执行：
+
+```bash
+bash Script/generate_maven_settings.sh
+bash Script/generate_vscode_config.sh
+```
 
 ## 补充说明
 

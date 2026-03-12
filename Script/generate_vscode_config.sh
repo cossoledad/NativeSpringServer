@@ -6,6 +6,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 VSCODE_DIR="${REPO_ROOT}/.vscode"
 BACKEND_POM="${REPO_ROOT}/App/backend/pom.xml"
+PROJECT_CONFIG_TEMPLATE="${REPO_ROOT}/Config/project-config-template.json"
+PROJECT_CONFIG_FILE="${REPO_ROOT}/Config/project-config.json"
 
 BLUE='\033[1;34m'
 GREEN='\033[1;32m'
@@ -39,6 +41,33 @@ xml_text() {
   sed -n "0,/<${tag}>/{s/.*<${tag}>\\([^<]*\\)<\\/${tag}>.*/\\1/p;}" "${file}" | head -n 1
 }
 
+json_config_value() {
+  local key="$1"
+  local value
+  value="$(
+    python3 - "${PROJECT_CONFIG_TEMPLATE}" "${PROJECT_CONFIG_FILE}" "${key}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+template_path = Path(sys.argv[1])
+override_path = Path(sys.argv[2])
+key = sys.argv[3]
+value = ""
+
+for path in (template_path, override_path):
+    if not path.exists():
+        continue
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(data, dict) and key in data and data[key] is not None:
+        value = str(data[key])
+
+print(value)
+PY
+)"
+  printf '%s' "${value}"
+}
+
 JAVA_BIN="${JAVA_BIN:-$(command -v java || true)}"
 GDB_BIN="${GDB_BIN:-$(command -v gdb || true)}"
 BACKEND_ARTIFACT_ID="$(xml_text artifactId "${BACKEND_POM}")"
@@ -47,6 +76,7 @@ BACKEND_MAIN_CLASS="com.example.backend.BackendSmokeApplication"
 BACKEND_JAR_REL="App/backend/target/${BACKEND_ARTIFACT_ID}-${BACKEND_VERSION}.jar"
 FOUNDATION_LIB_DIR_REL="App/foundation/build/native/lib"
 FOUNDATION_EXE_REL="App/foundation/build/foundation_smoke"
+PROJECT_MAVEN_SETTINGS="$(json_config_value PROJECT_MAVEN_SETTINGS)"
 
 if [[ -z "${BACKEND_ARTIFACT_ID}" || -z "${BACKEND_VERSION}" ]]; then
   log_err "无法从 ${BACKEND_POM} 解析 backend artifactId/version"
@@ -103,6 +133,24 @@ cat > "${VSCODE_DIR}/settings.json" <<'EOF'
   "cmake.configureOnOpen": false
 }
 EOF
+
+python3 - "${VSCODE_DIR}/settings.json" "${PROJECT_MAVEN_SETTINGS}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+maven_settings = sys.argv[2].strip()
+data = json.loads(path.read_text(encoding="utf-8"))
+
+if maven_settings:
+    data["java.configuration.maven.userSettings"] = maven_settings
+else:
+    data.pop("java.configuration.maven.userSettings", None)
+
+path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+PY
+
 log_ok "Wrote .vscode/settings.json"
 
 log_step "Generate tasks.json"
@@ -233,13 +281,25 @@ cat > "${VSCODE_DIR}/tasks.json" <<'EOF'
 }
 EOF
 
-python3 - <<EOF
+python3 - "${VSCODE_DIR}/tasks.json" "${PROJECT_MAVEN_SETTINGS}" <<'PY'
+import json
+import sys
 from pathlib import Path
-path = Path("${VSCODE_DIR}/tasks.json")
-text = path.read_text(encoding="utf-8")
-text = text.replace("backend-smoke-0.1.2-SNAPSHOT.jar", "${BACKEND_ARTIFACT_ID}-${BACKEND_VERSION}.jar")
-path.write_text(text, encoding="utf-8")
-EOF
+
+path = Path(sys.argv[1])
+maven_settings = sys.argv[2].strip()
+data = json.loads(path.read_text(encoding="utf-8"))
+
+if maven_settings:
+    suffix = f" -s {maven_settings}"
+    for task in data.get("tasks", []):
+        if task.get("label") in {"Backend: debug classpath", "App: debug classpath"}:
+            command = task.get("command", "")
+            if "dependency:copy-dependencies" in command and " -s " not in command:
+                task["command"] = command.replace("mvn -q", f"mvn -q{suffix}")
+
+path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+PY
 log_ok "Wrote .vscode/tasks.json"
 
 log_step "Generate launch.json"
@@ -340,4 +400,7 @@ log_step "Summary"
 log_info "java: ${JAVA_BIN}"
 log_info "gdb: ${GDB_BIN}"
 log_info "backend jar: ${BACKEND_JAR_REL}"
+if [[ -n "${PROJECT_MAVEN_SETTINGS}" ]]; then
+  log_info "maven settings: ${PROJECT_MAVEN_SETTINGS}"
+fi
 log_ok "VS Code configuration generated under ${VSCODE_DIR}"

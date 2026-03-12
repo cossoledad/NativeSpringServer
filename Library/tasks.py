@@ -13,6 +13,13 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from Tools.invoke_support import run, success, task_scope
+from Tools.project_config import (
+    DEFAULT_CONAN_REMOTE_NAME,
+    DEFAULT_CONAN_REMOTE_URL,
+    DEFAULT_MAVEN_RELEASES_REPO_ID,
+    DEFAULT_MAVEN_RELEASES_REPO_URL,
+    PROJECT_MAVEN_SETTINGS,
+)
 
 NATIVE_DIR = ROOT / "native"
 NATIVE_BUILD_DIR = NATIVE_DIR / "build"
@@ -22,10 +29,6 @@ JAVA_IMPL_SRC_DIR = ROOT / "src" / "impl-java"
 JAVA_IMPL_TARGET_DIR = TARGET_DIR / "generated-sources" / "cloudlogger-impl"
 NATIVE_PACKAGE_INCLUDE_DIR = DIST_DIR / "native" / "include"
 NATIVE_PACKAGE_LIB_DIR = DIST_DIR / "native" / "lib"
-DEFAULT_CONAN_REMOTE_NAME = "conan-pr"
-DEFAULT_CONAN_REMOTE_URL = "http://172.27.128.1:19091/repository/conan-pr/"
-DEFAULT_MAVEN_RELEASES_REPO_ID = "maven-releases"
-DEFAULT_MAVEN_RELEASES_REPO_URL = "http://172.27.128.1:19091/repository/maven-releases/"
 APP_FOUNDATION_DIR = REPO_ROOT / "App" / "foundation"
 APP_BACKEND_DIR = REPO_ROOT / "App" / "backend"
 
@@ -55,6 +58,10 @@ def _pom_version() -> str:
     return version.strip()
 
 
+def _maven_settings_arg(settings_file: str) -> str:
+    return f"-s {settings_file}" if settings_file else ""
+
+
 def _compile_swig_java(c) -> None:
     swig_dir = TARGET_DIR / "generated-sources" / "cloudlogger-swig"
     classes_dir = TARGET_DIR / "generated-classes" / "cloudlogger-swig"
@@ -70,7 +77,7 @@ def _compile_swig_java(c) -> None:
     c.run(f"javac --release 21 -d {classes_dir} " + " ".join(java_files), pty=True)
 
 
-def _compile_impl_java(c) -> None:
+def _compile_impl_java(c, mvn_cmd: str = "mvn", settings_file: str = PROJECT_MAVEN_SETTINGS) -> None:
     impl_src_dir = TARGET_DIR / "generated-sources" / "cloudlogger-impl"
     classes_dir = TARGET_DIR / "generated-classes" / "cloudlogger-impl"
     classpath_file = TARGET_DIR / "compile.classpath"
@@ -81,9 +88,12 @@ def _compile_impl_java(c) -> None:
 
     _rm(classes_dir)
     classes_dir.mkdir(parents=True, exist_ok=True)
+    settings_arg = _maven_settings_arg(settings_file)
     c.run(
-        "mvn -q -DincludeScope=compile dependency:build-classpath "
-        f"-Dmdep.outputFile={classpath_file}",
+        (
+            f"{mvn_cmd} {settings_arg} -q -DincludeScope=compile "
+            f"dependency:build-classpath -Dmdep.outputFile={classpath_file}"
+        ).strip(),
         pty=True,
     )
     dep_cp = classpath_file.read_text(encoding="utf-8").strip()
@@ -158,18 +168,22 @@ def java_prepare(c):
 
 
 @task
-def java_build(c, skip_tests=True):
+def java_build(c, skip_tests=True, mvn_cmd="mvn", settings_file=PROJECT_MAVEN_SETTINGS):
     """Build Java artifact with generated SWIG and implementation sources."""
     with task_scope("Library java-build"):
         skip_flag = "-DskipTests" if skip_tests else ""
-        run(c, "mvn clean", title="Clean Maven outputs")
+        settings_arg = _maven_settings_arg(settings_file)
+        run(c, f"{mvn_cmd} {settings_arg} clean".strip(), title="Clean Maven outputs")
         native_build(c)
         java_prepare(c)
         _compile_swig_java(c)
-        _compile_impl_java(c)
+        _compile_impl_java(c, mvn_cmd=mvn_cmd, settings_file=settings_file)
         run(
             c,
-            f"mvn package {skip_flag} -Dmaven.compiler.useIncrementalCompilation=false".strip(),
+            (
+                f"{mvn_cmd} {settings_arg} package {skip_flag} "
+                "-Dmaven.compiler.useIncrementalCompilation=false"
+            ).strip(),
             title="Package library jar",
         )
 
@@ -306,6 +320,7 @@ def java_publish(
     version="",
     skip_tests=True,
     mvn_cmd="mvn",
+    settings_file=PROJECT_MAVEN_SETTINGS,
 ):
     """
     Publish Java core library to Maven repository.
@@ -332,25 +347,29 @@ def java_publish(
 
         skip_flag = "-DskipTests" if skip_tests else ""
         deploy_repo = f"-DaltDeploymentRepository={repo_id}::default::{repo_url}"
+        settings_arg = _maven_settings_arg(settings_file)
 
         changed = deploy_version != origin_version
         try:
             if changed:
                 run(
                     c,
-                    f"{mvn_cmd} versions:set -DnewVersion={deploy_version} -DgenerateBackupPoms=false",
+                    (
+                        f"{mvn_cmd} {settings_arg} versions:set "
+                        f"-DnewVersion={deploy_version} -DgenerateBackupPoms=false"
+                    ).strip(),
                     title="Switch Maven version",
                 )
-            run(c, f"{mvn_cmd} clean", title="Clean Maven outputs")
+            run(c, f"{mvn_cmd} {settings_arg} clean".strip(), title="Clean Maven outputs")
             native_build(c)
             java_prepare(c)
             _compile_swig_java(c)
-            _compile_impl_java(c)
+            _compile_impl_java(c, mvn_cmd=mvn_cmd, settings_file=settings_file)
             _rm(TARGET_DIR / "classes")
             run(
                 c,
                 (
-                    f"{mvn_cmd} package {skip_flag} "
+                    f"{mvn_cmd} {settings_arg} package {skip_flag} "
                     "-Dmaven.compiler.useIncrementalCompilation=false"
                 ).strip(),
                 title="Package library jar",
@@ -358,7 +377,7 @@ def java_publish(
             run(
                 c,
                 (
-                    f"{mvn_cmd} deploy {skip_flag} {deploy_repo} "
+                    f"{mvn_cmd} {settings_arg} deploy {skip_flag} {deploy_repo} "
                     "-Dmaven.main.skip=true"
                 ).strip(),
                 title="Deploy library jar",
@@ -367,7 +386,10 @@ def java_publish(
             if changed:
                 run(
                     c,
-                    f"{mvn_cmd} versions:set -DnewVersion={origin_version} -DgenerateBackupPoms=false",
+                    (
+                        f"{mvn_cmd} {settings_arg} versions:set "
+                        f"-DnewVersion={origin_version} -DgenerateBackupPoms=false"
+                    ).strip(),
                     title="Restore Maven version",
                 )
 
@@ -413,7 +435,7 @@ def app_foundation(
 def app_backend(
     c,
     mvn_cmd="mvn",
-    settings_file="",
+    settings_file=PROJECT_MAVEN_SETTINGS,
     cloudlogger_version="",
     conan_cmd="conan",
     remote=DEFAULT_CONAN_REMOTE_NAME,

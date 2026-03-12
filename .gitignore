@@ -17,6 +17,9 @@ venv/
 .env
 .env.*
 project-config.json
+Config/project-config.json
+Config/maven-settings.xml
+.m2/
 
 # Logs
 *.log
