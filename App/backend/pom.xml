@@ -10,7 +10,7 @@
   <properties>
     <maven.compiler.release>21</maven.compiler.release>
     <spring.boot.version>3.3.5</spring.boot.version>
-    <cloudlogger.version>0.1.3</cloudlogger.version>
+    <cloudlogger.version>0.9.1</cloudlogger.version>
   </properties>
 
   <dependencies>

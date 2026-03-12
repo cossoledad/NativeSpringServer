@@ -30,11 +30,13 @@ final class CloudNetworkNativeLoader {
             String explicitDir = System.getenv("CLOUD_LOGGER_NATIVE_DIR");
             if (explicitDir != null && !explicitDir.isBlank()) {
                 loadFromDirectory(Path.of(explicitDir));
+                System.out.println("CloudNetworkNativeLoader loadFromDirectory");
                 loaded = true;
                 return;
             }
 
             loadFromResources();
+            System.out.println("CloudNetworkNativeLoader loadFromResources");
             loaded = true;
         }
     }
