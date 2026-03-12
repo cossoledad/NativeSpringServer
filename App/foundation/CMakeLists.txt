@@ -4,7 +4,7 @@ project(FoundationMath LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(cloudlogger-native CONFIG REQUIRED)
+find_package(nss-native CONFIG REQUIRED)
 find_package(SWIG REQUIRED)
 include(UseSWIG)
 find_package(JNI REQUIRED)
@@ -27,7 +27,7 @@ target_include_directories(foundation_math
 )
 
 target_link_libraries(foundation_math
-  PRIVATE cloudlogger-native::cloudlogger-native
+  PRIVATE nss-native::nss-native
 )
 
 set_target_properties(foundation_math PROPERTIES

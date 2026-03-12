@@ -8,8 +8,7 @@ from conan.tools.files import copy
 
 
 class CloudLoggerNativeConan(ConanFile):
-    name = "cloudlogger-native"
-    version = "0.1.1"
+    name = "nss-native"
     package_type = "shared-library"
 
     settings = "os", "arch", "compiler", "build_type"

@@ -1,5 +1,5 @@
 [requires]
-cloudlogger-native/0.1.1
+nss-native/0.1.1
 
 [generators]
 CMakeDeps

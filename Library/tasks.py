@@ -218,7 +218,7 @@ def conan_remote(
 @task
 def conan_create(
     c,
-    name="cloudlogger-native",
+    name="nss-native",
     version="0.1.0",
     user="",
     channel="",
@@ -246,7 +246,7 @@ def conan_create(
 @task
 def conan_upload(
     c,
-    name="cloudlogger-native",
+    name="nss-native",
     version="0.1.0",
     user="",
     channel="",
@@ -263,7 +263,7 @@ def conan_upload(
 @task
 def conan_publish(
     c,
-    name="cloudlogger-native",
+    name="nss-native",
     version="0.1.0",
     user="",
     channel="",
@@ -370,7 +370,7 @@ def java_publish(
 def release_publish(
     c,
     version,
-    name="cloudlogger-native",
+    name="nss-native",
     user="",
     channel="",
     remote=DEFAULT_CONAN_REMOTE_NAME,

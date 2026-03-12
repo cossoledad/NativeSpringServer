@@ -18,7 +18,7 @@
 - `App/foundation` 额外模拟一个“计算库”：
   - C++ `MathApi::add(int, int)`
   - SWIG/JNI 导出为 Java `com.example.foundation.math.MathApi`
-  - 计算内部通过 Conan2 引入的日志库 `cloudlogger-native` 调用 `CloudLoggerRegistry.upload(...)`
+  - 计算内部通过 Conan2 引入的日志库 `nss-native` 调用 `CloudLoggerRegistry.upload(...)`
 - `App/backend` 作为服务层：
   - 通过 Maven 引入日志库 Java 实现（保证日志链路正确）
   - 通过 foundation 生成的 SWIG Java API 调用计算库
